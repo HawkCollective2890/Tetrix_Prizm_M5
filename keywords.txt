@@ -7,7 +7,7 @@
 #######################################
 
 	
-PRIZM			KEYWORD1	PRIZM
+PRIZM5			KEYWORD1	PRIZM
 EXPANSION		KEYWORD1	EXPANSION
 
 #######################################
