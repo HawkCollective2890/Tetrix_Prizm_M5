@@ -18,7 +18,7 @@ int deadZone = 5; //Used for Arcade drive  ( 2 motors 1 analog Stick )
 CRGB leds[NUM_LEDS];
 void setup() {
   FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
-  Wire.begin(26, 32);
+  Wire.begin(25, 21);
   delay(100);
   Serial.begin(115200);
 
