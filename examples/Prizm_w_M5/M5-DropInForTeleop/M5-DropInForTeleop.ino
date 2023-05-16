@@ -21,9 +21,25 @@ uint16_t xc;
 int accely2;
 int accelx2;
 int x = 0;
+bool startup = 0;
 volatile bool g_event_happened = false;
 bool g_previously_connected = false;
 bool hold = 0;
+int dzL;
+int dzR;
+int dzFixLx;
+int dzFixLy;
+int dzFixRx;
+int dzFixRy;
+
+//Controller colors
+#define white=1;
+#define red=2;
+#define blue=3;
+#define black=4;
+#define ltBlue=5;
+
+
 
 void ps4_callback() {
   g_event_happened = true;
@@ -33,10 +49,9 @@ void ps4_callback() {
 
 void setup() {
   Serial.begin(115200);
-  Wire.begin(8);
+
   FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
-  Serial.begin(115200);  // start serial for output
-  leds[0] = CRGB::Green;
+  leds[0] = CRGB::Red;
   FastLED.show();
   while (!Serial && millis() < 5000)
     ;
@@ -44,13 +59,16 @@ void setup() {
   WiFi.macAddress().toCharArray(MAC, 18);
   Serial.println(MAC);
   PS4.begin();
-  Wire.onReceive(receiveEvent);  // register event
-  Wire.onRequest(requestEvent);
+
   Serial.println("Waiting for Prizm.");
-  while (x = 0) {}
+
   delay(200);
   Serial.println("waiting for PS4!");
+
   PS4.attach(&ps4_callback);
+
+ControllerColor(white,white); //Controller color top,bottom
+  //  while (x = 0) {}
 }
 
 typedef union {
@@ -69,16 +87,30 @@ void loop() {
     if (isConnected) Serial.println("*** Connected ***");
     else Serial.println("*** DisConnected ***");
     g_previously_connected = isConnected;
+    PS4.setLed(128, 0, 0);
+    PS4.sendToController();
+    leds[0] = CRGB ::Red;
+    FastLED.show();
   }
   /* At this point, the Esp32 is ready and waiting for the PS4 remote to connect, it will connect automatically once the PS4 remote is turned on using the PS4 button
         There are some buttons/events available in the "PS4Controller.h" library that are unused in this case*/
   if (g_event_happened && isConnected) {
     if (memcmp(&PS4.data, &ps4data_prev, ps4_data_size)) {
       memcpy(&ps4data_prev, &PS4.data, ps4_data_size);
+      if (startup == 0) { // do only once after startup
+        PS4.setLed(0, 128, 0);
+        PS4.sendToController();
+        startup = 1;
+        Wire.begin(8);
+        Wire.onReceive(receiveEvent);  // register event
+        Wire.onRequest(requestEvent);
+      }
+      leds[0] = CRGB ::Green;
+      FastLED.show();
       button_data_t button_data;
       g_event_happened = false;
       button_data.button = PS4.data.button;
-      PS4.setRumble(128, 128);
+      //   PS4.setRumble(128, 128);
       /* Serial.printf("%08X %3d - 0%4d %4d %4d %4d %4d %4d",
                     button_data.data, PS4.Battery(),
                     PS4.data.analog.stick.lx,
@@ -147,6 +179,32 @@ found therer is a "flat spot" in with R2 corner pointing up*/
       float gy = (float)gyroy * RAD_TO_DEG / 1024;
       float gz = (float)gyroz * RAD_TO_DEG / 1024;
       // Serial.printf(" - %4d(%3.2f) %4d(%3.2f) %4d(%3.2f)\n", gyrox, gx, gyroy, gy, gyroz, gz);
+
+      //Deadzoning analog sticks
+      dzFixLx = (int16_t)(PS4.data.latestPacket[13]);
+      dzFixLy = (int16_t)(PS4.data.latestPacket[14]);
+      dzFixRx = (int16_t)(PS4.data.latestPacket[15]);
+      dzFixRy = (int16_t)(PS4.data.latestPacket[16]);
+      if ((dzFixLx > 128 - (.5 * dzL)) && (dzFixLx < (.5 * dzL) + 128)) {
+        dzFixLx = 128;
+      }
+      if ((dzFixLy > 128 - (.5 * dzL)) && (dzFixLy < (.5 * dzL) + 128)) {
+        dzFixLy = 128;
+      }
+      if ((dzFixRx > 128 - (.5 * dzR)) && (dzFixRx < (.5 * dzR) + 128)) {
+        dzFixRx = 128;
+      }
+      if ((dzFixRy > 128 - (.5 * dzR)) && (dzFixRy < (.5 * dzR) + 128)) {
+        dzFixRy = 128;
+      }
+
+      Serial.print(dzFixLx);
+      Serial.print("  ");
+      Serial.print(dzFixLy);
+      Serial.print("  ");
+      Serial.print(dzFixRx);
+      Serial.print("  ");
+      Serial.println(dzFixRy);
     }
   }
 }
@@ -158,10 +216,14 @@ void requestEvent() {
   Wire.write(PS4.data.latestPacket[19]);  //buttons_2
   Wire.write(PS4.Touchpad());             //TouchB
   Wire.write(PS4.data.latestPacket[19]);  //PBb
-  Wire.write(PS4.data.latestPacket[13]);  //LxStick
-  Wire.write(PS4.data.latestPacket[14]);  //LyStick
-  Wire.write(PS4.data.latestPacket[15]);  //RxStick
-  Wire.write(PS4.data.latestPacket[16]);  //RyStick
+  //Wire.write(PS4.data.latestPacket[13]);  //LxStick
+  Wire.write(dzFixLx);                    //LxStick dz Fixed
+                                          // Wire.write(PS4.data.latestPacket[14]);  //LyStick
+  Wire.write(dzFixLy);                    //LyStick dz Fixed
+                                          // Wire.write(PS4.data.latestPacket[15]);  //RxStick
+  Wire.write(dzFixRx);                    //RxStick dz Fixed
+                                          // Wire.write(PS4.data.latestPacket[16]);  //RyStick
+  Wire.write(dzFixRy);                    //RyStick dz Fixed
   Wire.write(PS4.data.latestPacket[20]);  //L2Trigger
   Wire.write(PS4.data.latestPacket[21]);  // R2Trigger
   Wire.write(0b0);                        //LxMotor
@@ -190,27 +252,80 @@ void requestEvent() {
 
   Wire.write(PS4.isConnected());  //Status
   Wire.write(0b0);                //inRange
-
 }
 
-  void receiveEvent(int howMany) {
+void receiveEvent(int howMany) {
 
-    x = Wire.read();  // receive byte as an integer
-                      // Serial.print("    recieve bit = ");
-    Serial.println(x);
-    Serial.print("  ");
+  x = Wire.read();  // receive byte as an integer
+                    // Serial.print("    recieve bit = ");
+  Serial.println(x);
+  Serial.print("  ");
 
-
-    if (x == 0x1F) {
-      int rumble;
-      int read = Wire.read();  // receive byte as an integer
-      Serial.println(read);
-      if (read == 0) { rumble = 0; }
-      if (read == 1) { rumble = 128; }
-      if (read == 2) { rumble = 255; }
-      PS4.setRumble(rumble, rumble);
+  if (x == 0x21) {
+    // Wire.end();
+    Wire.begin(8);
+  }
+  if (x == 0x20) {  //32
+    int color = Wire.read();
+    Serial.println(color);
+    if (color == 1) {
+      Serial.println("red");
+      PS4.setLed(255, 0, 0);
       PS4.sendToController();
     }
-  
+    if (color == 2) {
+      Serial.println("Blue");
+      PS4.setLed(0, 0, 255);
+      PS4.sendToController();
+    }
+    if (color == 3) {
+      Serial.println("Yellow");
+      PS4.setLed(255, 255, 0);
+      PS4.sendToController();
+    }
+
+    if (color == 4) {
+      Serial.println("Green");
+      PS4.setLed(0, 255, 0);
+      PS4.sendToController();
+    }
+  }
+
+
+
+
+  if (x == 0x1F) {
+    int rumble;
+    int read = Wire.read();  // receive byte as an integer
+    Serial.println(read);
+    if (read == 0) { rumble = 0; }
+    if (read == 1) { rumble = 128; }
+    if (read == 2) { rumble = 255; }
+    PS4.setRumble(rumble, rumble);
+    PS4.sendToController();
+  }
+  if (x == 0x22) {      //deadzone right
+    dzR = Wire.read();  // receive byte as an integer
+  }
+
+  if (x == 0x23) {      //deadzone left
+    dzL = Wire.read();  // receive byte as an integer
+  }
+
   x = 0;
+}
+
+
+ControllerDesplay(int color1,int color2 ){
+if (color1==1){
+for ( int i=6,1<10,i++){
+        leds[0] = CRGB ::Green;
+      FastLED.show();
+}
+  
+}
+
+
+
+
 }
