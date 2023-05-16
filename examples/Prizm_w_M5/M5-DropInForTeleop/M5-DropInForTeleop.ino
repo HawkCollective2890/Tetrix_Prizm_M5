@@ -33,11 +33,11 @@ int dzFixRx;
 int dzFixRy;
 
 //Controller colors
-#define white=1;
-#define red=2;
-#define blue=3;
-#define black=4;
-#define ltBlue=5;
+#define white 1
+#define red 2
+#define blue 3
+#define black 4
+#define ltBlue 5
 
 
 
@@ -67,7 +67,7 @@ void setup() {
 
   PS4.attach(&ps4_callback);
 
-ControllerColor(white,white); //Controller color top,bottom
+ControllerDesplay(white,white); //Controller color top,bottom
   //  while (x = 0) {}
 }
 
@@ -316,9 +316,9 @@ void receiveEvent(int howMany) {
 }
 
 
-ControllerDesplay(int color1,int color2 ){
+void ControllerDesplay(int color1,int color2 ){
 if (color1==1){
-for ( int i=6,1<10,i++){
+for ( int i=6;1<10;i++){
         leds[0] = CRGB ::Green;
       FastLED.show();
 }
