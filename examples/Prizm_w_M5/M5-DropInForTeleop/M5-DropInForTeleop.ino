@@ -50,13 +50,13 @@ M5 Atom
    |*****| Team Color
    -------
 
-*/   
+*/
 //Controller Colors See FastLED Keywords for more color names.
 #define topColor Blue
 #define bottomColor CornflowerBlue
 
 //Team colors
-#define team White
+#define team Black
 
 
 void ps4_callback() {
@@ -79,11 +79,7 @@ void setup() {
   for (int i = 10; i < 15; i++) {
     leds[i] = CRGB::bottomColor;  // bottom color of controller
   }
-    for (int i = 20; i < 25; i++) {
-    leds[i] = CRGB::team;  // bottom color of controller
-  }
 
-  delay(2000);
   for (int i = 0; i < 5; i++) {
     leds[i] = CRGB::Red;
   }
@@ -339,55 +335,63 @@ void receiveEvent(int howMany) {
       Serial.println("red");
       PS4.setLed(255, 0, 0);
       PS4.sendToController();
+      for (int i = 20; i < 25; i++) {
+        leds[i] = CRGB::Red;  // bottom color of controller
+        FastLED.show();
+      }
     }
+    
     if (color == 2) {
       Serial.println("Blue");
       PS4.setLed(0, 0, 255);
       PS4.sendToController();
+      for (int i = 20; i < 25; i++) {
+        leds[i] = CRGB::Blue;  // bottom color of controller
+        FastLED.show();
+      }
     }
-    if (color == 3) {
-      Serial.println("Yellow");
-      PS4.setLed(255, 255, 0);
-      PS4.sendToController();
+      if (color == 3) {
+        Serial.println("Yellow");
+        PS4.setLed(255, 255, 0);
+        PS4.sendToController();
+        for (int i = 20; i < 25; i++) {
+          leds[i] = CRGB::Yellow;  // bottom color of controller
+          FastLED.show();
+        }
+      }
+    
+
+        if (color == 4) {
+          Serial.println("Green");
+          PS4.setLed(0, 255, 0);
+          PS4.sendToController();
+          for (int i = 20; i < 25; i++) {
+            leds[i] = CRGB::Green;  // bottom color of controller
+            FastLED.show();
+          }
+        }
+
+
+
+
+        if (x == 0x1F) {
+          int rumble;
+          int read = Wire.read();  // receive byte as an integer
+          Serial.println(read);
+          if (read == 0) { rumble = 0; }
+          if (read == 1) { rumble = 128; }
+          if (read == 2) { rumble = 255; }
+          PS4.setRumble(rumble, rumble);
+          PS4.sendToController();
+        }
+        if (x == 0x22) {      //deadzone right
+          dzR = Wire.read();  // receive byte as an integer
+        }
+
+        if (x == 0x23) {      //deadzone left
+          dzL = Wire.read();  // receive byte as an integer
+        }
+
+        x = 0;
+      }
     }
-
-    if (color == 4) {
-      Serial.println("Green");
-      PS4.setLed(0, 255, 0);
-      PS4.sendToController();
-    }
-  }
-
-
-
-
-  if (x == 0x1F) {
-    int rumble;
-    int read = Wire.read();  // receive byte as an integer
-    Serial.println(read);
-    if (read == 0) { rumble = 0; }
-    if (read == 1) { rumble = 128; }
-    if (read == 2) { rumble = 255; }
-    PS4.setRumble(rumble, rumble);
-    PS4.sendToController();
-  }
-  if (x == 0x22) {      //deadzone right
-    dzR = Wire.read();  // receive byte as an integer
-  }
-
-  if (x == 0x23) {      //deadzone left
-    dzL = Wire.read();  // receive byte as an integer
-  }
-
-  x = 0;
-}
-
-
-void ControllerDesplay(int color1, int color2) {
-  if (color1 == 1) {
-    for (int i = 6; 1 < 10; i++) {
-      leds[0] = CRGB ::Green;
-      FastLED.show();
-    }
-  }
-}
