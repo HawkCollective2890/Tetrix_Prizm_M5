@@ -39,9 +39,24 @@ int M5Button = 39;
 #define black 4
 #define ltBlue 5
 
-//Controller Case Colors
+
+/*
+M5 Atom
+   _______
+   |*****| Controller Connection
+   |*****| Top of controller color
+   |*****| Bottom of Controller color
+   |*****|
+   |*****| Team Color
+   -------
+
+*/   
+//Controller Colors See FastLED Keywords for more color names.
 #define topColor Blue
 #define bottomColor CornflowerBlue
+
+//Team colors
+#define team White
 
 
 void ps4_callback() {
@@ -63,6 +78,9 @@ void setup() {
   }
   for (int i = 10; i < 15; i++) {
     leds[i] = CRGB::bottomColor;  // bottom color of controller
+  }
+    for (int i = 20; i < 25; i++) {
+    leds[i] = CRGB::team;  // bottom color of controller
   }
 
   delay(2000);
