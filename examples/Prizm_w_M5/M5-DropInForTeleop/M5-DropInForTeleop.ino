@@ -9,7 +9,7 @@
 int r = 255;
 int g = 0;
 int b = 0;
-#define NUM_LEDS 1
+#define NUM_LEDS 25
 #define DATA_PIN 27
 CRGB leds[NUM_LEDS];
 // MACROS
@@ -31,14 +31,17 @@ int dzFixLx;
 int dzFixLy;
 int dzFixRx;
 int dzFixRy;
-
-//Controller colors
+int M5Button = 39;
+//Controller LED colors
 #define white 1
 #define red 2
 #define blue 3
 #define black 4
 #define ltBlue 5
 
+//Controller Case Colors
+#define topColor Blue
+#define bottomColor CornflowerBlue
 
 
 void ps4_callback() {
@@ -49,15 +52,32 @@ void ps4_callback() {
 
 void setup() {
   Serial.begin(115200);
+  pinMode(M5Button, INPUT);
 
+  // lcd.setRGB(colorR, colorG, colorB);
   FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
-  leds[0] = CRGB::Red;
+  FastLED.setBrightness(128);
+  FastLED.clear();
+  for (int i = 5; i < 10; i++) {  // see fastLED keywords for colors
+    leds[i] = CRGB::topColor;     // top color of controller
+  }
+  for (int i = 10; i < 15; i++) {
+    leds[i] = CRGB::bottomColor;  // bottom color of controller
+  }
+
+  delay(2000);
+  for (int i = 0; i < 5; i++) {
+    leds[i] = CRGB::Red;
+  }
+
   FastLED.show();
+  //
   while (!Serial && millis() < 5000)
     ;
   Serial.print("ESP Board MAC Address:  ");
   WiFi.macAddress().toCharArray(MAC, 18);
   Serial.println(MAC);
+
   PS4.begin();
 
   Serial.println("Waiting for Prizm.");
@@ -67,8 +87,8 @@ void setup() {
 
   PS4.attach(&ps4_callback);
 
-ControllerDesplay(white,white); //Controller color top,bottom
-  //  while (x = 0) {}
+  //ControllerDesplay(white,white); //Controller color top,bottom
+  while (x = 0) {}
 }
 
 typedef union {
@@ -82,31 +102,60 @@ ps4_t ps4data_prev;
 uint32_t ps4_data_size = sizeof(ps4_t) - sizeof(uint8_t*);
 
 void loop() {
+  //button on Atom --- Press to find controller.--
+  if (digitalRead(M5Button) == 0) {
+    //rumble for 5 seconds
+    Serial.print("button");
+    for (int R = 0; R < 5; R++) {
+      PS4.setRumble(0, 255);
+      PS4.sendToController();
+      delay(500);
+      PS4.setRumble(255, 0);
+      PS4.sendToController();
+      delay(500);
+    }
+    PS4.setRumble(0, 0);
+    PS4.sendToController();
+  }
   bool isConnected = PS4.isConnected();
   if (g_previously_connected != isConnected) {
-    if (isConnected) Serial.println("*** Connected ***");
-    else Serial.println("*** DisConnected ***");
+    if (isConnected) {
+      for (int i = 0; i < 5; i++) {
+        leds[i] = CRGB::Green;
+      }
+      FastLED.show();
+      PS4.setLed(0, 128, 0);
+      PS4.sendToController();
+
+      Serial.println("*** Connected ***");
+
+
+    } else {
+      Serial.println("*** DisConnected ***");
+
+      PS4.setLed(128, 0, 0);
+      PS4.sendToController();
+      for (int i = 0; i < 5; i++) {
+        leds[i] = CRGB::Red;
+      }
+      FastLED.show();
+    }
     g_previously_connected = isConnected;
-    PS4.setLed(128, 0, 0);
-    PS4.sendToController();
-    leds[0] = CRGB ::Red;
-    FastLED.show();
   }
   /* At this point, the Esp32 is ready and waiting for the PS4 remote to connect, it will connect automatically once the PS4 remote is turned on using the PS4 button
         There are some buttons/events available in the "PS4Controller.h" library that are unused in this case*/
   if (g_event_happened && isConnected) {
     if (memcmp(&PS4.data, &ps4data_prev, ps4_data_size)) {
       memcpy(&ps4data_prev, &PS4.data, ps4_data_size);
-      if (startup == 0) { // do only once after startup
-        PS4.setLed(0, 128, 0);
-        PS4.sendToController();
+      if (startup == 0) {  // do only once after startup
+
         startup = 1;
-        Wire.begin(8);
+
+        Wire.begin(8, 21, 25, 100000);
         Wire.onReceive(receiveEvent);  // register event
         Wire.onRequest(requestEvent);
       }
-      leds[0] = CRGB ::Green;
-      FastLED.show();
+
       button_data_t button_data;
       g_event_happened = false;
       button_data.button = PS4.data.button;
@@ -316,16 +365,11 @@ void receiveEvent(int howMany) {
 }
 
 
-void ControllerDesplay(int color1,int color2 ){
-if (color1==1){
-for ( int i=6;1<10;i++){
-        leds[0] = CRGB ::Green;
+void ControllerDesplay(int color1, int color2) {
+  if (color1 == 1) {
+    for (int i = 6; 1 < 10; i++) {
+      leds[0] = CRGB ::Green;
       FastLED.show();
-}
-  
-}
-
-
-
-
+    }
+  }
 }
